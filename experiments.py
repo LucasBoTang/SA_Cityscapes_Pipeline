@@ -139,7 +139,7 @@ if __name__ == "__main__":
     assert args.feature in ["RGB", "feat", "prob"], "Feature should be 'RGB' 'feat' or 'prob'"
     assert args.feature != "RGB", "RGB features is not implemented"
     assert args.solver in ["heur", "ilp"], "Solver should be 'heur' or 'ilp'"
-    assert args.scribbles in ["scribbles", "arti_scribbles"], "Scribbles should be 'scribbles' or 'arti_scribbles'"
+    assert args.scribbles in ["scribbles", "modi_scribbles", "arti_scribbles"], "Scribbles should be 'scribbles' or 'arti_scribbles'"
     assert os.path.isdir(path + "/" + args.graph), path + "/" + args.graph + " does not exist"
 
     # load part of DCNN for feature map
@@ -241,10 +241,10 @@ if __name__ == "__main__":
             graph.load_feat_map(feat_map, attr="feat")
 
         # solve
-        tick = time.time()
         height, width = image.shape[:2]
         if args.solver == "heur":
             # solve
+            tick = time.time()
             heuristic_graph = solver.heuristic.solve(graph.copy(), lambd, psi, phi, attr="feat")
             # convert into mask
             mask, pred = to_image.graph_to_image(heuristic_graph, height, width, scribbles)
@@ -264,9 +264,9 @@ if __name__ == "__main__":
             # warm start
             solver.ilp.warm_start(ilp, pred%21, superpixels)
             # set time limit
-            timelimit = args.timelimit
-            ilp.parameters.timelimit.set(timelimit)
+            ilp.parameters.timelimit.set(args.timelimit)
             # solve
+            tick = time.time()
             ilp.solve()
             mask, pred = to_image.ilp_to_image(graph, ilp, height, width, scribbles)
 
@@ -290,8 +290,8 @@ if __name__ == "__main__":
         print()
 
         # visualize
-        mask_show(image, mask, inst_pred, name="image")
-        cv2.destroyAllWindows()
+        # mask_show(image, mask, inst_pred, name="image")
+        # cv2.destroyAllWindows()
 
         # terminate with iteration limit
         #if cnt > 1:

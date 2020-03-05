@@ -19,18 +19,13 @@ if __name__ == "__main__":
 
     # set parser
     parser = argparse.ArgumentParser()
-    parser.add_argument('--fdr', type=str, default="./experiments_eccv/prob_heur")
-    parser.add_argument('--output', type=str, default="./experiments_eccv/prob_heur/pano_mask")
+    parser.add_argument('--fdr', type=str, default="prob_heur")
     args = parser.parse_args()
 
     # search files
-    search = os.path.join(args.fdr, "*_instanceIds.png")
+    search = os.path.join("./experiments_eccv/" + args.fdr, "*_instanceIds.png")
     files = glob.glob(search)
     files.sort()
-
-    # create output folder
-    if not os.path.isdir(args.output):
-        os.mkdir(args.output)
 
     for file in files:
         # output name
@@ -78,4 +73,4 @@ if __name__ == "__main__":
         # cv2.waitKey(0)
         # cv2.destroyAllWindows()
 
-        cv2.imwrite(args.output + "/" + output_name, pano)
+        cv2.imwrite("./experiments_eccv/" + args.fdr + "/" + output_name, pano)

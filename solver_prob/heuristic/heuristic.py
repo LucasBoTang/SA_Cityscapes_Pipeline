@@ -71,7 +71,7 @@ def solve(graph, lambd=0.03, psi=1, phi=0.02, stop=None, propagation=True, attr=
         label = graph.nodes[i]["label"]
         if label:
             labels.append(label)
-    print("Labels includes:", ", ".join(labels))
+    # print("Labels includes:", ", ".join(labels))
 
     return graph
 

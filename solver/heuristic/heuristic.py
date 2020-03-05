@@ -64,16 +64,6 @@ def solve(graph, lambd=0.03, psi=1, phi=0.02, stop=None, propagation=True, attr=
         # skip contracted node
         if i not in graph.nodes:
             continue
-    # assign unlabelled to background if connected
-    for i in list(graph.nodes):
-        # skip contracted node
-        if i not in graph.nodes:
-            continue
-        if graph.nodes[i]["label"] == "background": #"void": #
-            for j in list(graph.neighbors(i)):
-                if not graph.nodes[j]["label"]:
-                    graph.contract(j, i)
-                    i = j
 
     # assign unlabelled to similiar
     for i in list(graph.nodes):
@@ -102,7 +92,7 @@ def solve(graph, lambd=0.03, psi=1, phi=0.02, stop=None, propagation=True, attr=
     for i in graph.nodes:
         label = graph.nodes[i]["label"]
         labels.append(label)
-    #print("Labels includes:", ", ".join(labels))
+    # print("Labels includes:", ", ".join(labels))
 
     return graph
 

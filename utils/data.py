@@ -112,8 +112,8 @@ id2train = {}
 for l in labels:
     train2id[l.trainId] = l.id
     id2train[l.id] = l.trainId
-train2id[-1] = 255
-train2id[255] = 255
+train2id[-1] = 0
+train2id[255] = 0
 id2train[-1] = 255
 
 # get label map
