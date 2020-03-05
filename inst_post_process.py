@@ -246,7 +246,7 @@ if __name__ == "__main__":
             if l in data.instanceTrainId:
                 region = sseg[:,:,1] == l
                 # build graph
-                graph = to_graph.to_superpixel_graph(image, inst_scribbles, superpixels*region)
+                graph = to_graph.to_superpixel_graph(image, inst_scribbles, superpixels*region, slabel="inst")
                 graph.load_feat_map(feat, attr="feat")
                 # solve
                 print("Segment for {}...".format(data.label_map[l]))
