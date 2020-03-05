@@ -40,71 +40,72 @@ if __name__ == "__main__":
 
     # set parser
     parser = argparse.ArgumentParser()
-    parser.add_argument('--type', type=str, default="scribbles")
-    parser.add_argument('--graph_dir', type=str, default=path+"/graphs/")
+    parser.add_argument('--scribbles', type=str, default="")
+    parser.add_argument('--superpixels', dest='superpixels', action='store_true')
+    parser.set_defaults(superpixels=False)
+    parser.add_argument('--graph', type=str, default="graphs")
     args = parser.parse_args()
 
-    # guarantee valid args
-    assert args.type in ["scribbles", "arti_scribbles", "superpixels"], "Type should be scribbles arti_scribbles or superpixels"
-
     # output folder
-    output = "./experiments_eccv/vis/" + args.type
+    out_path = "./experiments_eccv/vis/"
+    if args.scribbles == "scribbles":
+        out_path += "scri"
+    elif args.scribbles == "arti_scribbles":
+        out_path += "arti"
+    elif args.scribbles == "modi_scribbles":
+        out_path += "modi"
+
+    if args.superpixels:
+        if args.graph == "graphs":
+            out_path += "2000"
+        else:
+            out_path += args.graph.split("_")[-1]
 
     # create folder
     if not os.path.isdir("./experiments_eccv/vis/"):
         os.mkdir("./experiments_eccv/vis")
-    if not os.path.isdir("./experiments_eccv/vis/" + args.type):
-        os.mkdir("./experiments_eccv/vis/" + args.type)
+    if not os.path.isdir(out_path):
+        os.mkdir(out_path)
 
     # biuld data loader
     cnt = 0
-    data_generator = data_loader.load_cityscapes(path, args.type)
+    data_generator = data_loader.load_cityscapes(path, args.scribbles)
     for filename, image, sseg, inst, scribbles in data_generator:
-        cnt += 1
 
         # superpixel
-        if args.type == "superpixels":
-            print("{}: Visualizing superpixels for image {}...".format(cnt, filename))
-            # get superpixels
-            graph = nx.read_gpickle(args.graph_dir + "/" + filename + ".gpickle")
-            superpixels = graph.get_superpixels_map()
-            # visualize
-            img = vis_superpixels(image, superpixels)
+        if args.superpixels:
+            gfile = path + "/" + args.graph + "/" + filename + ".gpickle"
+            if os.path.isfile(gfile):
+                print("{}: Visualizing superpixels for image {}...".format(cnt, filename))
+                # get superpixels
+                graph = nx.read_gpickle(gfile)
+                superpixels = graph.get_superpixels_map()
+                # visualize
+                img = vis_superpixels(image, superpixels)
+            else:
+                print("{} does not have graph file...".format(filename))
+                continue
+        else:
+            img = image.copy()
 
-        if args.type == "arti_scribbles":
+        if args.scribbles:
             if scribbles is not None:
                 print("{}: Visualizing artificial scribbles for image {}...".format(cnt, filename))
                 # reformat scribbles
-                scribbles = data_loader.scribble_convert(scribbles)
-                # get mask
-                mask, annotated = to_image.get_mask(scribbles)
-                # visualize
-                img = vis_scribbles(image, mask, annotated)
-            else:
-                cnt -= 1
-                print("{}: Skipping image {} because it does not have annotation...".format(cnt, filename))
-                continue
-
-        if args.type == "scribbles":
-            if scribbles is not None:
-                print("{}: Visualizing scribbles for image {}...".format(cnt, filename))
-                # reformat scribbles
-                # BGR to RGB
-                scribbles = cv2.cvtColor(scribbles, cv2.COLOR_BGR2RGB)
-                scribbles[:,:,1] = np.where(scribbles[:,:,1]==255, 128, scribbles[:,:,1])
+                scribbles = data_loader.scribbles_reformat(scribbles)
                 # get mask
                 mask, annotated = to_image.get_mask(scribbles, erode=True)
                 # visualize
-                img = vis_scribbles(image, mask, annotated)
+                img = vis_scribbles(img, mask, annotated)
             else:
-                cnt -= 1
                 print("{}: Skipping image {} because it does not have annotation...".format(cnt, filename))
                 continue
 
         # show image
-        #cv2.imshow("vis", img)
-        #cv2.waitKey(0)
-        #cv2.destroyAllWindows()
+        cv2.imshow("vis", img)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
 
         # write image
-        cv2.imwrite(output + "/" + filename + ".png", img)
+        cnt += 1
+        cv2.imwrite(out_path + "/" + filename + ".png", img)

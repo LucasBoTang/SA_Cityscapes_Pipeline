@@ -61,28 +61,6 @@ def solve(graph, lambd=0.03, psi=1, phi=0.02, stop=None, propagation=True, attr=
         if len(list(graph.neighbors(i))) == 1 and not graph.nodes[i]["label"]:
             j = list(graph.neighbors(i))[0]
             graph.contract(j, i)
-        # skip contracted node
-        if i not in graph.nodes:
-            continue
-
-    # assign unlabelled to similiar
-    for i in list(graph.nodes):
-        # skip contracted node
-        if i not in graph.nodes:
-            continue
-        if not graph.nodes[i]["label"]:
-            color = graph.nodes[i]["mean_color"]
-            inds = []
-            colors = []
-            neighors = list(graph.neighbors(i))
-            for j in neighors:
-                inds.append(j)
-                colors.append(graph.nodes[j]["mean_color"])
-            colors = np.array(colors)
-            # get min l1 distance
-            k = np.argmin(np.sum(np.abs(colors - color)))
-            j = neighors[k]
-            graph.contract(i, j)
 
     if iter % 100 != 0:
         print("{} iterations: {} groups of pixels".format(iter+1, len(graph)))
@@ -91,7 +69,8 @@ def solve(graph, lambd=0.03, psi=1, phi=0.02, stop=None, propagation=True, attr=
     labels = []
     for i in graph.nodes:
         label = graph.nodes[i]["label"]
-        labels.append(label)
+        if label:
+            labels.append(label)
     # print("Labels includes:", ", ".join(labels))
 
     return graph
