@@ -8,7 +8,7 @@ from skimage import segmentation as sg
 from .data import class_info, label_map
 
 
-def to_superpixel_graph(image, mask, superpixels):
+def to_superpixel_graph(image, mask, superpixels, slabel="sseg"):
     """
     convert OpenCV BGR color image into NetworkX undirected graph
     edges are bettween grid neighbors (left, right, up, down)
@@ -55,7 +55,10 @@ def to_superpixel_graph(image, mask, superpixels):
             if not annotated:
                 label = None
             else:
-                label = label_map[label_id] + "_" + str(scri_id)
+                if slabel == "sseg":
+                    label = label_map[label_id] + "_" + str(scri_id)
+                else:
+                    label = label_id
             # add new superpixel node
             if ind not in graph:
                 graph.add_node(ind, mean_color=color, label=label, pixels=[pixel], weight=1)
