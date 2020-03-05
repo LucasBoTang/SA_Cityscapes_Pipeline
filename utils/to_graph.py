@@ -25,12 +25,15 @@ def to_superpixel_graph(image, mask, superpixels, slabel="sseg"):
     """
     print("Building graph based on superpixels...")
 
-    # avoid to put all pixels into graph, dilate unlabelled area
-    selected = (1 - mask[:, :, 0] // 255).reshape((image.shape[0], image.shape[1], 1))
-    # dilate
-    kernel = np.ones((5, 5), np.uint8)
-    selected = cv2.dilate(selected, kernel, iterations=2)
-
+    if slabel == "sseg":
+        # avoid to put all pixels into graph, dilate unlabelled area
+        selected = (1 - mask[:, :, 0] // 255).reshape((image.shape[0], image.shape[1], 1))
+        # dilate
+        kernel = np.ones((5, 5), np.uint8)
+        selected = cv2.dilate(selected, kernel, iterations=2)
+    elif slabel == "inst":
+        selected = mask[:, :, 2] // 255
+        
     # int to float
     image = image / 255
 
@@ -58,7 +61,7 @@ def to_superpixel_graph(image, mask, superpixels, slabel="sseg"):
                 if slabel == "sseg":
                     label = label_map[label_id] + "_" + str(scri_id)
                 else:
-                    label = label_id
+                    label = str(label_id)
             # add new superpixel node
             if ind not in graph:
                 graph.add_node(ind, mean_color=color, label=label, pixels=[pixel], weight=1)

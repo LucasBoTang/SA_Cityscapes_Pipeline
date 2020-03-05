@@ -225,7 +225,7 @@ if __name__ == "__main__":
         # inst scribbles
         inst_scribbles = np.zeros_like(scribbles)
         inst_scribbles[:,:,0] = scribbles[:,:,0]
-        inst_scribbles[:,:,1] = scribbles[:,:,2]
+        inst_scribbles[:,:,1] = scribbles[:,:,2] * (scribbles[:,:,0] == 255)
 
         # feature map
         # load features
@@ -245,16 +245,33 @@ if __name__ == "__main__":
             # if has instances
             if l in data.instanceTrainId:
                 region = sseg[:,:,1] == l
+                print("Segment for {}...".format(data.label_map[l]))
                 # build graph
+                inst_scribbles[:,:,2] = region * 255
                 graph = to_graph.to_superpixel_graph(image, inst_scribbles, superpixels*region, slabel="inst")
                 graph.load_feat_map(feat, attr="feat")
+                # init pred
+                pred = np.zeros((height, width), dtype=np.uint16)
                 # solve
-                print("Segment for {}...".format(data.label_map[l]))
                 heuristic_graph = solver.heuristic.solve(graph.copy(), lambd, psi, phi, attr="feat")
-                # convert into mask
-                mask, pred = to_image.graph_to_image(heuristic_graph, height, width, scribbles)
+                # new part
+                for group in heuristic_graph.nodes:
+                    # get the color of current label
+                    label = heuristic_graph.nodes[group]["label"]
+                    if not label:
+                        continue
+                    label = int(label)
+                    # get pixels in current graph
+                    pixels = heuristic_graph.nodes[group]["pixels"]
+                    # assign pixels with color
+                    for x, y in pixels:
+                        pred[y, x] = label
                 # add instance
-                sseg[:,:,2] = pred * region
+                sseg[:,:,2] += (pred * region).astype(np.uint16)
+                print(np.unique(sseg[:,:,2]))
+                from matplotlib import pyplot as plt
+                plt.imshow(sseg[:,:,2])
+                plt.show()
 
         # to instanceIds
         inst = np.zeros((height, width), dtype=int)
