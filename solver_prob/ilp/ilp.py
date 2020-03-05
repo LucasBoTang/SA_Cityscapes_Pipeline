@@ -225,7 +225,7 @@ def warm_start(ilp, pred, superpixels):
     vars = []
     for y in range(h):
         for x in range(w):
-            superpixel = superpixels[y][x]
+            superpixel = superpixels[y, x]
             # skip if superpixel is not selected
             if not superpixel:
                 continue
@@ -237,10 +237,10 @@ def warm_start(ilp, pred, superpixels):
                 name = "x_" + str(superpixel) + "_" + str(l)
                 names.append(name)
                 # decide binary state
-                if l == pred[y][x]:
+                if l == pred[y, x]:
                     vars.append(1)
                 else:
                     vars.append(0)
-                    
+
     assert len(names) == len(vars)
     ilp.MIP_starts.add(cplex.SparsePair(ind=names, val=vars), ilp.MIP_starts.effort_level.repair, "heuristic")

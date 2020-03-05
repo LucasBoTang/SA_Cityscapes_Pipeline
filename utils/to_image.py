@@ -117,26 +117,6 @@ def label_graph(graph, names, values):
             graph.nodes[i]["label"] = label
     return graph
 
-
-def fill(scribbles):
-    """
-    fill contour
-    """
-    annotation = np.zeros_like(scribbles)
-    # get different labels
-    labels = np.unique(scribbles)
-    for l in labels:
-        # skip None
-        if not l:
-            continue
-        binary = ((scribbles == l) * 255).astype(np.uint8)
-        contours, hierarchy = cv2.findContours(binary, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-        filling = np.zeros_like(scribbles)
-        for ctr in contours:
-            filling = np.logical_or(filling, cv2.drawContours(binary, [ctr], -1, 1, thickness=-1))
-        annotation += filling * l
-    return annotation
-
 def get_mask(annotations, erode=False):
     """
     visualize annotation

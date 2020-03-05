@@ -126,3 +126,9 @@ ignoreId = []
 for l in labels:
     if l.trainId == 255:
         ignoreId.append(l.id)
+
+instanceTrainId = []
+for l in labels:
+    if l.hasInstances:
+        if l.trainId != 255:
+            instanceTrainId.append(l.trainId)

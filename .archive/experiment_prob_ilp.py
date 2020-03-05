@@ -162,7 +162,7 @@ if __name__ == "__main__":
 
     # set parser
     parser = argparse.ArgumentParser()
-    parser.add_argument('--param', type=int, default=1)
+    parser.add_argument('--param', type=int, default=0.01)
     parser.add_argument('--timelimit', type=int, default=5)
     args = parser.parse_args()
 
@@ -172,14 +172,14 @@ if __name__ == "__main__":
     unions = np.zeros((21))
 
     path = DATA_PATH
-    data_generator = data_loader.load_cityscapes(path, "arti_scribbles")
+    data_generator = data_loader.load_cityscapes(path, "scribbles")
     prob_path = PROB_PATH
 
     # create folder
     if not os.path.isdir("./experiments_eccv"):
         os.mkdir("./experiments_eccv")
-    if not os.path.isdir("./experiments_eccv/prob_ilp_arti/"):
-        os.mkdir("./experiments_eccv/prob_ilp_arti")
+    if not os.path.isdir("./experiments_eccv/prob_ilp/"):
+        os.mkdir("./experiments_eccv/prob_ilp")
 
     cnt = 0
     ssegs = []
@@ -187,31 +187,36 @@ if __name__ == "__main__":
 
     tick = time.time()
 
+    infea = []
+
     for filename, image, sseg, inst, scribbles in data_generator:
         cnt += 1
         height, width = image.shape[:2]
         if scribbles is not None:
             print("{}: Generating ground truth approach for image {}...".format(cnt, filename))
-            scribbles = to_image.fill(scribbles)
-            scribbles = data_loader.scribble_convert(scribbles)
+            # BGR to RGB
+            scribbles = cv2.cvtColor(scribbles, cv2.COLOR_BGR2RGB)
+            scribbles[:,:,1] = np.where(scribbles[:,:,1]==255, 128, scribbles[:,:,1])
             # remove instance id
             scribbles[:,:,2] = 0
-            # skip ignore
-            scribbles[:,:,1] *= (scribbles[:,:,1] != 255)
         else:
             # skip image which does not have annotation
-            print("{}: Skipping image {} because it does not have annotation...".format(cnt, filename))
+            print("Skipping image {} because it does not have annotation...".format(filename))
             cnt -= 1
             continue
 
         # skip existed gt
-        if os.path.isfile("./experiments_eccv/prob_ilp_arti/" + filename + "_gtFine_labelIds.png"):
+        if os.path.isfile("./experiments_eccv/prob_ilp/" + filename + "_gtFine_labelIds.png"):
             print("Annotation exists, skip {}".format(filename))
             cnt -= 1
             continue
 
         # generate superpixels
         # superpixels = superpixel.get(image)
+        if not os.path.isfile(path + "/graphs/" + filename + ".gpickle"):
+            print("Skipping image {} because it does not have graph...".format(filename))
+            cnt -= 1
+            continue
         graph = nx.read_gpickle(path + "/graphs/" + filename + ".gpickle")
         superpixels = graph.get_superpixels_map()
         # split by annotation
@@ -236,12 +241,16 @@ if __name__ == "__main__":
         # cv2.destroyAllWindows()
 
         # load heuristic result directly
-        pred_id = np.array(Image.open("./experiments_eccv/prob_heur_arti/" + filename + "_gtFine_labelIds.png"))
+        pred_id = np.array(Image.open("./experiments_eccv/prob_heur/" + filename + "_gtFine_labelIds.png"))
         pred = np.zeros_like(pred_id, dtype=np.int8)
         for trainid in np.unique(pred_id):
             id = data.id2train[trainid]
             pred += id * (pred_id == trainid)
 
+        # mark ignore
+        ignore = (pred_id == 0)
+        scribbles[:,:,0] = scribbles[:,:,0] * (1 - ignore) + 255 * ignore
+        scribbles[:,:,1] = scribbles[:,:,1] * (1 - ignore) + 128 * ignore
 
         ilp_graph = graph.copy()
         # drop instance id
@@ -254,7 +263,7 @@ if __name__ == "__main__":
         # merge nodes with same label
         ilp_graph.add_pseudo_edge()
         # get superpixels map
-        superpixels = ilp_graph.get_superpixels_map()  * (pred != 255)
+        superpixels = ilp_graph.get_superpixels_map() * (pred != 255)
         # integer linear programming
         ilp = solver.ilp.build_model(ilp_graph, args.param)
         solver.ilp.warm_start(ilp, pred%21, superpixels)
@@ -263,13 +272,14 @@ if __name__ == "__main__":
         ilp.parameters.timelimit.set(timelimit)
         # solve
         ilp.solve()
-        if ilp.solution.get_status() == 107:
+        try:
             mask, pred = to_image.ilp_to_image(ilp_graph, ilp, height, width, scribbles)
-            cv2.imwrite("./experiments_eccv/prob_ilp_arti/" + filename + "_gtFine_color.png", mask)
-        else:
+            cv2.imwrite("./experiments_eccv/prob_ilp/" + filename + "_gtFine_color.png", mask)
+        except:
             infea.append(filename)
             with open("./experiments_eccv/prob_ilp/infeasibles.txt", "w") as output:
                  output.write(str(infea))
+
         # show the mask
         # mask_show(image, mask, pred, name="ilp")
         # cv2.destroyAllWindows()
@@ -277,21 +287,20 @@ if __name__ == "__main__":
         # get formatted sseg and inst
         sseg_pred, inst_pred = to_image.format(pred)
         # save annotation
-        Image.fromarray(sseg_pred).save("./experiments_eccv/prob_ilp_arti/"  + filename + "_gtFine_labelIds.png")
-        # Image.fromarray(inst_pred).save("./experiments_eccv/prob_ilp_arti/" + filename + "_gtFine_instanceIds.png")
-
+        Image.fromarray(sseg_pred).save("./experiments_eccv/prob_ilp/"  + filename + "_gtFine_labelIds.png")
+        # Image.fromarray(inst_pred).save("./experiments_eccv/prob_ilp/" + filename + "_gtFine_instanceIds.png")
 
         # store for score
         preds += list(pred%21)
         ssegs += list(sseg)
 
         # visualize
-        # mask_show(image, mask, inst_pred, name="image")
-        # cv2.destroyAllWindows()
+        mask_show(image, mask, inst_pred, name="image")
+        cv2.destroyAllWindows()
 
         # terminate with iteration limit
-        if cnt > 1:
-             break
+        #if cnt > 1:
+        #     break
 
     # show paramters
     #print(lambd, psi, phi)

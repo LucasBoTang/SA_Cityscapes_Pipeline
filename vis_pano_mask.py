@@ -48,6 +48,7 @@ if __name__ == "__main__":
         for l in np.unique(anno[:,:,1]):
             # get label
             label = data.label_map[l]
+            # get inst id
             for i in np.unique(anno[:,:,2] * (anno[:,:,1] == l)):
                 # init
                 inst = np.zeros_like(anno)

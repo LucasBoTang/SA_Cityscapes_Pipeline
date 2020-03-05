@@ -47,6 +47,26 @@ def load_cityscapes(path, fdr):
         yield name, image, sseg, inst, scribbles
 
 
+def scribbles_reformat(scribbles):
+    """
+    convert format of scribble
+    """
+    # student's annotation
+    if len(scribbles.shape) == 3:
+        # BGR to RGB
+        scribbles = cv2.cvtColor(scribbles, cv2.COLOR_BGR2RGB)
+        # mark ignore
+        scribbles[:,:,1] = np.where(scribbles[:,:,1]==255, 128, scribbles[:,:,1])
+
+    # artificial scribbles
+    if len(scribbles.shape) == 2:
+        # fill the close
+        scribbles = fill(scribbles)
+        # convert to BGR
+        scribbles = scribble_convert(scribbles)
+
+    return scribbles
+
 def gt_covert(gt):
     """
     convert id of groud truth to train id
@@ -78,3 +98,23 @@ def scribble_convert(scribbles):
     instance = (scribbles % 1000) * (scribbles >= 1000)
     new_scribbles[:, :, 2] = instance
     return new_scribbles
+
+
+def fill(scribbles):
+    """
+    fill contour
+    """
+    annotation = np.zeros_like(scribbles)
+    # get different labels
+    labels = np.unique(scribbles)
+    for l in labels:
+        # skip None
+        if not l:
+            continue
+        binary = ((scribbles == l) * 255).astype(np.uint8)
+        contours, hierarchy = cv2.findContours(binary, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        filling = np.zeros_like(scribbles)
+        for ctr in contours:
+            filling = np.logical_or(filling, cv2.drawContours(binary, [ctr], -1, 1, thickness=-1))
+        annotation += filling * l
+    return annotation
