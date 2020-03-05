@@ -268,10 +268,10 @@ if __name__ == "__main__":
                         pred[y, x] = label
                 # add instance
                 sseg[:,:,2] += (pred * region).astype(np.uint16)
-                print(np.unique(sseg[:,:,2]))
-                from matplotlib import pyplot as plt
-                plt.imshow(sseg[:,:,2])
-                plt.show()
+                # print(np.unique(sseg[:,:,2]))
+                # from matplotlib import pyplot as plt
+                # plt.imshow(sseg[:,:,2])
+                # plt.show()
 
         # to instanceIds
         inst = np.zeros((height, width), dtype=int)
