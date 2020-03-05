@@ -136,9 +136,9 @@ if __name__ == "__main__":
     print("Save images into {}...".format(out_path))
 
     # check args
-    assert args.feature in ["RGB", "feat", "prob"], "Feature should be 'RGB' 'feat' or 'prob'"
-    assert args.feature != "RGB", "RGB features is not implemented"
-    assert args.solver in ["heur", "ilp"], "Solver should be 'heur' or 'ilp'"
+    assert args.feature in ["rgb", "feat", "prob"], "Feature should be 'rgb' 'feat' or 'prob'"
+    assert args.feature != "rgb", "rgb features is not implemented"
+    assert args.solver in ["heur", "ilp", "mrf"], "Solver should be 'heur' or 'ilp', 'mrf'"
     assert args.scribbles in ["scribbles", "modi_scribbles", "arti_scribbles"], "Scribbles should be 'scribbles' or 'arti_scribbles'"
     assert os.path.isdir(path + "/" + args.graph), path + "/" + args.graph + " does not exist"
 
@@ -164,6 +164,10 @@ if __name__ == "__main__":
     # get heuristic result
     if args.solver == "ilp":
         heur_fdr = out_path.replace("ilp", "heur")
+        assert os.path.isdir(heur_fdr), "Heuristic results do not exist, please run experiment for heuristic first!"
+
+    if args.solver == "mrf":
+        heur_fdr = out_path.replace("mrf", "heur")
         assert os.path.isdir(heur_fdr), "Heuristic results do not exist, please run experiment for heuristic first!"
 
     # create folder
@@ -211,7 +215,7 @@ if __name__ == "__main__":
         # split by annotation
         superpixels = superpixel.split(superpixels, scribbles)
 
-        if args.solver == "ilp":
+        if args.solver == "ilp" or args.solver == "mrf":
             # load heuristic result directly
             pred_id = np.array(Image.open(heur_fdr + "/" + filename + "_gtFine_labelIds.png"))
             pred = np.zeros_like(pred_id, dtype=np.uint8)
@@ -249,7 +253,7 @@ if __name__ == "__main__":
             # convert into mask
             mask, pred = to_image.graph_to_image(heuristic_graph, height, width, scribbles)
 
-        elif args.solver == "ilp":
+        elif args.solver == "ilp" or args.solver == "mrf":
             # drop instance id
             for i in graph.nodes:
                 label = graph.nodes[i]["label"]
@@ -259,6 +263,9 @@ if __name__ == "__main__":
             graph.add_pseudo_edge()
             # build ilp
             ilp = solver.ilp.build_model(graph, args.param)
+            # mrf without connectivity
+            if args.solver == "mrf":
+                ilp.unregister_callback(solver.ilp.connectivityCallback)
             # get superpixels map
             superpixels = graph.get_superpixels_map()
             # warm start
