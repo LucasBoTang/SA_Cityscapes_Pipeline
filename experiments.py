@@ -129,17 +129,21 @@ if __name__ == "__main__":
     path = DATA_PATH
     prob_path = PROB_PATH
     out_path = args.dir + "/" + args.feature + "_" + args.solver
-    if args.scribbles == "arti_scribbles":
+    if args.scribbles == "scribbles":
+        out_path += "_scri"
+    elif args.scribbles == "arti_scribbles":
         out_path += "_arti"
+    elif args.scribbles == "modi_scribbles":
+        out_path += "_modi"
     if args.graph != "graphs":
-        out_path += "_" + args.graph
+        out_path += "_" + args.graph.split("_")[-1]
     print("Save images into {}...".format(out_path))
 
     # check args
     assert args.feature in ["rgb", "feat", "prob"], "Feature should be 'rgb' 'feat' or 'prob'"
     assert args.feature != "rgb", "rgb features is not implemented"
     assert args.solver in ["heur", "ilp", "mrf"], "Solver should be 'heur' or 'ilp', 'mrf'"
-    assert args.scribbles in ["scribbles", "modi_scribbles", "arti_scribbles"], "Scribbles should be 'scribbles' or 'arti_scribbles'"
+    assert args.scribbles in ["scribbles", "modi_scribbles", "arti_scribbles"], "Scribbles should be 'scribbles' 'modi_scribbles' or 'arti_scribbles'"
     assert os.path.isdir(path + "/" + args.graph), path + "/" + args.graph + " does not exist"
 
     # load part of DCNN for feature map
@@ -196,6 +200,7 @@ if __name__ == "__main__":
         else:
             # skip image which does not have annotation
             print("Skipping image {} because it does not have annotation...".format(filename))
+            continue
 
         # skip existed gt
         if os.path.isfile(out_path + "/" + filename + "_gtFine_labelIds.png"):

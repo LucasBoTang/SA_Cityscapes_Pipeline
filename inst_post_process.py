@@ -167,6 +167,9 @@ if __name__ == "__main__":
     parser.add_argument('--scribbles', type=str, default="scribbles")
     args = parser.parse_args()
 
+    # check dir
+    assert os.path.isdir("./experiments_eccv/" + args.fdr), "./experiments_eccv/" + args.fdr + " does not exist!"
+
     if args.feature == "feat":
         # load cnn model
         model = set_model("./models/checkpoints/deeplabv1_resnet101-coco.pth")

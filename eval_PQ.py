@@ -25,7 +25,7 @@ if __name__ == "__main__":
     gt_folder = gt_out_path + "/cityscapes_panoptic_val_trainId"
     pred_jsonfile = pred_out_path + "/cityscapes_panoptic_val_trainId.json"
     pred_folder = pred_out_path + "/cityscapes_panoptic_val_trainId"
-    result = pred_in_path + "_result.json"
+    result = pred_in_path + "/result.json"
 
     if not os.path.isfile(gt_jsonfile):
         if not os.path.isdir(gt_out_path):

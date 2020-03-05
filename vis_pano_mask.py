@@ -42,7 +42,10 @@ if __name__ == "__main__":
         # get sseg id
         for l in np.unique(anno[:,:,1]):
             # get label
-            label = data.label_map[l]
+            if l in data.label_map:
+                label = data.label_map[l]
+            else:
+                continue
             # get inst id
             for i in np.unique(anno[:,:,2] * (anno[:,:,1] == l)):
                 # init
