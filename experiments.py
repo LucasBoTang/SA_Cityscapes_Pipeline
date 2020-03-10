@@ -157,8 +157,8 @@ if __name__ == "__main__":
     if args.feature == "feat":
         import solver
         lambd=0.1
-        psi=0.0
-        phi=0.001
+        psi = 0.0
+        phi = 0.001
     elif args.feature == "prob":
         import solver_prob as solver
         lambd = 0.1
